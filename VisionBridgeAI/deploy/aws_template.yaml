@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  VisionBridge AI - Cloud-Augmented Accessibility Service
+  OpenCV AI Competition 2026
+  Serverless OpenCV 5 COOL inference on AWS Graviton (ARM64) with S3 storage
+
+Parameters:
+  ProjectName:
+    Type: String
+    Default: visionbridge-ai
+    Description: Base name for VisionBridge AI resources
+  Environment:
+    Type: String
+    Default: production
+    AllowedValues: [development, staging, production]
+
+Resources:
+  # 1. S3 Storage for Permitted Project Assets & Anonymized Benchmarks
+  VisionBridgeAssetBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-assets-${AWS::AccountId}-${AWS::Region}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+
+  # 2. Least-Privilege IAM Execution Role for Lambda
+  VisionBridgeLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-lambda-execution-role"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: VisionBridgeCloudWatchLogs
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
+        - PolicyName: VisionBridgeS3Access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "arn:aws:s3:::${ProjectName}-assets-${AWS::AccountId}-${AWS::Region}/*"
+
+  # 3. AWS Lambda Function Powered by AWS Graviton (ARM64)
+  VisionBridgeInferenceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${ProjectName}-scene-analysis"
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.11
+      Architectures:
+        - arm64  # AWS Graviton architecture for OpenCV 5 COOL
+      CodeUri: .
+      MemorySize: 1024
+      Timeout: 15
+      Role: !GetAtt VisionBridgeLambdaRole.Arn
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Ref VisionBridgeAssetBucket
+          OPENCV_OPTIMIZATION: "COOL_GRAVITON_SIMD"
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /analyze
+            Method: post
+
+Outputs:
+  AssetBucketName:
+    Description: Amazon S3 Bucket for VisionBridge assets
+    Value: !Ref VisionBridgeAssetBucket
+  LambdaFunctionArn:
+    Description: VisionBridge AWS Lambda Function ARN
+    Value: !GetAtt VisionBridgeInferenceFunction.Arn
+  ApiEndpoint:
+    Description: HTTPS API Gateway endpoint for cloud-augmented accessibility
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/analyze"
