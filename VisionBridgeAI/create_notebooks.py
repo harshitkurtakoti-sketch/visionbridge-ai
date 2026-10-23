@@ -181,7 +181,8 @@ desc = SceneDescriber.generate_description(
 )
 print("=== SPOKEN SCENE SCRIPT ===")
 print(desc['spoken_script'])
-print("\n=== MANDATORY NAVIGATION SAFETY NOTICE ===")
+print()
+print("=== MANDATORY NAVIGATION SAFETY NOTICE ===")
 print(desc['safety_note'])"""),
 ]
 
@@ -338,12 +339,14 @@ print("Latency       :", response['latency_ms'], "ms")
 print("Safety Note   :", response['safety_note'])"""),
     code_cell("""# Scenario 2: User asks 'Read this text'
 read_response = assistant.process_command("Read this text.")
-print("\n=== SCENARIO 2 RESULT ===")
+print()
+print("=== SCENARIO 2 RESULT ===")
 print("Extracted     :", read_response['text'])
 print("Confidence    :", read_response['confidence'])
 print("Speech Script :", read_response['speech_text'])"""),
     code_cell("""# Scenario 3: Verify Privacy Enforcement on Cloud Upload
-print("\n=== SCENARIO 3: CLOUD PRIVACY SAFEGUARD ===")
+print()
+print("=== SCENARIO 3: CLOUD PRIVACY SAFEGUARD ===")
 # Without user consent -> Strictly blocked
 assistant.user_cloud_consent = False
 blocked_result = assistant.request_cloud_analysis()
@@ -355,7 +358,8 @@ authorized_result = assistant.request_cloud_analysis()
 print("With Consent    :", authorized_result.get("status"), "| Provider:", authorized_result.get("cloud_provider"))
 
 assistant.stop_camera()
-print("\nEnd-to-end integration verified successfully!")"""),
+print()
+print("End-to-end integration verified successfully!")"""),
 ]
 
 notebooks = {
