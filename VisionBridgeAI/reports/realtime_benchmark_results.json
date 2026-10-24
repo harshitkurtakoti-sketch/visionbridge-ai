@@ -1,0 +1,17 @@
+{
+  "timestamp": "2026-10-24 18:13:22",
+  "total_frames": 60,
+  "elapsed_wall_time_sec": 5.14,
+  "mean_fps": 20.64,
+  "mean_latency_ms": 85.67,
+  "p95_latency_ms": 158.16,
+  "stage_latencies_ms": {
+    "capture": 29.54,
+    "preprocessing": 26.24,
+    "detection": 11.06,
+    "ocr": 94.09
+  },
+  "mean_objects_detected": 0.78,
+  "mean_uncertainty_candidates": 0.42,
+  "memory_rss_mb": 80.1
+}
