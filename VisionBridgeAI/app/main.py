@@ -13,13 +13,25 @@ import streamlit as st
 import numpy as np
 import cv2
 
-# Ensure project root is in sys.path
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-if str(PROJECT_ROOT) not in sys.path:
-    sys.path.insert(0, str(PROJECT_ROOT))
+# Ensure application and project roots are in sys.path
+APP_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = APP_DIR.parent
+for _p in [str(APP_DIR), str(PROJECT_ROOT), str(PROJECT_ROOT.parent)]:
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
-from src.assistant import VisionBridgeAssistant
-from app.ui import ACCESSIBLE_CSS, render_header
+try:
+    from src.assistant import VisionBridgeAssistant
+except ImportError:
+    from VisionBridgeAI.src.assistant import VisionBridgeAssistant
+
+try:
+    from app.ui import ACCESSIBLE_CSS, render_header
+except (ImportError, ModuleNotFoundError):
+    try:
+        from VisionBridgeAI.app.ui import ACCESSIBLE_CSS, render_header
+    except (ImportError, ModuleNotFoundError):
+        from ui import ACCESSIBLE_CSS, render_header
 
 
 st.set_page_config(
