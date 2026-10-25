@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+.venv/
+env/
+venv/
+
+# Environment variables & secrets
+.env
+*.pem
+*.key
+aws_credentials.json
+
+# Model weights
+models/*.onnx
+models/*.pt
+models/*.weights
+
+# Temp data
+data/captured/*
+data/temp/*
+
+# OS generated
+.DS_Store
+Thumbs.db
