@@ -17,6 +17,11 @@ class CommandIntent(str, Enum):
     DETECT_OBJECTS = "detect_objects"
     ENVIRONMENTAL_SOUND_ALERT = "sound_alert"
     SYSTEM_STATUS = "system_status"
+    START_CAMERA = "start_camera"
+    STOP_CAMERA = "stop_camera"
+    HAZARD_WARNING = "hazard_warning"
+    FIRE_ALARM = "fire_alarm"
+    DOOR_KNOCK = "door_knock"
     HELP = "help"
     UNKNOWN = "unknown"
 
@@ -38,7 +43,9 @@ class AudioAccessibilityManager:
         - "Jarvis, describe my surroundings."
         - "Read this text."
         - "What objects can you see?"
-        - "Describe the image."
+        - "Warn me of hazards."
+        - "Check emergency alarms."
+        - "Start / Stop camera."
         """
         text = raw_input.strip().lower()
         # Remove wake word if present
@@ -47,7 +54,22 @@ class AudioAccessibilityManager:
         intent = CommandIntent.UNKNOWN
         confidence = 0.5
 
-        if any(phrase in text_clean for phrase in ["describe", "surroundings", "describe the image", "scene"]):
+        if any(phrase in text_clean for phrase in ["fire alarm", "fire", "smoke detector"]):
+            intent = CommandIntent.FIRE_ALARM
+            confidence = 0.95
+        elif any(phrase in text_clean for phrase in ["door knock", "knock", "doorbell", "visitor"]):
+            intent = CommandIntent.DOOR_KNOCK
+            confidence = 0.95
+        elif any(phrase in text_clean for phrase in ["warn", "hazard", "danger", "threat", "safety", "warning"]):
+            intent = CommandIntent.HAZARD_WARNING
+            confidence = 0.95
+        elif any(phrase in text_clean for phrase in ["start camera", "turn on camera", "enable camera", "activate camera", "camera on", "start video"]):
+            intent = CommandIntent.START_CAMERA
+            confidence = 0.95
+        elif any(phrase in text_clean for phrase in ["stop camera", "turn off camera", "disable camera", "pause camera", "camera off", "stop video"]):
+            intent = CommandIntent.STOP_CAMERA
+            confidence = 0.95
+        elif any(phrase in text_clean for phrase in ["describe", "surroundings", "describe the image", "scene"]):
             intent = CommandIntent.DESCRIBE_SURROUNDINGS
             confidence = 0.95
         elif any(phrase in text_clean for phrase in ["read", "read text", "read this", "read sign", "ocr", "words"]):
@@ -56,7 +78,7 @@ class AudioAccessibilityManager:
         elif any(phrase in text_clean for phrase in ["what objects", "objects", "detect objects", "can you see", "find"]):
             intent = CommandIntent.DETECT_OBJECTS
             confidence = 0.90
-        elif any(phrase in text_clean for phrase in ["status", "quality", "lighting", "blur", "camera"]):
+        elif any(phrase in text_clean for phrase in ["status", "quality", "lighting", "blur", "camera", "diagnostics"]):
             intent = CommandIntent.SYSTEM_STATUS
             confidence = 0.85
         elif any(phrase in text_clean for phrase in ["help", "commands", "what can you do"]):

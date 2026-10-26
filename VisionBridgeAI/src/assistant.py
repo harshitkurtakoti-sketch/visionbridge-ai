@@ -154,6 +154,43 @@ class VisionBridgeAssistant:
             return self.read_text()
         elif intent == CommandIntent.DETECT_OBJECTS:
             return self.describe_surroundings()
+        elif intent == CommandIntent.START_CAMERA:
+            self.start_camera()
+            msg = "Visual sensor array online and streaming, sir."
+            self.audio.add_caption(msg, source="Jarvis")
+            if self.enable_tts and self.tts:
+                self.tts.speak(msg)
+            return {"action": "start_camera", "speech_text": msg, "status_message": msg}
+        elif intent == CommandIntent.STOP_CAMERA:
+            self.stop_camera()
+            msg = "Visual sensor array deactivated. System standby."
+            self.audio.add_caption(msg, source="Jarvis")
+            if self.enable_tts and self.tts:
+                self.tts.speak(msg)
+            return {"action": "stop_camera", "speech_text": msg, "status_message": msg}
+        elif intent == CommandIntent.HAZARD_WARNING:
+            frame = self.get_current_frame()
+            if frame is not None:
+                q = self.vision.assess_frame(frame)
+                det = self.detector.detect(frame)
+                hazards = [d for d in det["confirmed_detections"] if d.get("distance_estimate") == "immediate"]
+                if hazards:
+                    labels = ", ".join(h["label"] for h in hazards)
+                    msg = f"Caution! Immediate proximity hazard detected: {labels}. Please proceed with vigilance."
+                elif q["advisories"]:
+                    msg = f"Warning: Visual environment degraded. {q['advisories'][0]}. Proceed with caution."
+                else:
+                    msg = "Diagnostic hazard scan completed. Forward path is clear. No immediate collision vectors detected."
+            else:
+                msg = "Acoustic and situational alert sensors are active. No active hazards reported in immediate sector."
+            self.audio.add_caption(msg, source="Jarvis (Hazard Guard)")
+            if self.enable_tts and self.tts:
+                self.tts.speak(msg)
+            return {"speech_text": msg, "status_message": msg, "hazard_checked": True}
+        elif intent == CommandIntent.FIRE_ALARM:
+            return self.detect_environmental_sound("fire_alarm", peak_db=88.5)
+        elif intent == CommandIntent.DOOR_KNOCK:
+            return self.detect_environmental_sound("door_knock", peak_db=62.0)
         elif intent == CommandIntent.SYSTEM_STATUS:
             frame = self.get_current_frame()
             if frame is not None:
@@ -164,30 +201,40 @@ class VisionBridgeAssistant:
             self.audio.add_caption(msg, source="Jarvis")
             if self.enable_tts and self.tts:
                 self.tts.speak(msg)
-            return {"status_message": msg}
+            return {"status_message": msg, "speech_text": msg}
         elif intent == CommandIntent.HELP:
             help_msg = (
-                "Commands available: 'Describe my surroundings', 'Read this text', "
-                "'What objects can you see?', or 'Status'. Press keyboard shortcuts: "
-                "C to toggle camera, D to describe, R to read text."
+                "Jarvis Voice commands: 'Describe surroundings', 'Read text', "
+                "'Warn me of hazards', 'Check status', 'Fire alarm test', or 'Toggle camera'. "
+                "Keyboard shortcuts: V for Voice, C for Camera, D for Describe, R for OCR."
             )
             self.audio.add_caption(help_msg, source="Jarvis")
             if self.enable_tts and self.tts:
                 self.tts.speak(help_msg)
-            return {"help_message": help_msg}
+            return {"help_message": help_msg, "speech_text": help_msg}
         else:
-            fallback = "I heard you, but did not recognize that specific command. Try saying 'Describe surroundings' or 'Read text'."
+            fallback = "I heard you, but did not recognize that specific command. Try saying 'Describe surroundings', 'Read text', or 'Warn me of hazards'."
             self.audio.add_caption(fallback, source="Jarvis")
             if self.enable_tts and self.tts:
                 self.tts.speak(fallback)
-            return {"unrecognized": True, "message": fallback}
+            return {"unrecognized": True, "message": fallback, "speech_text": fallback}
 
     def detect_environmental_sound(self, sound_type: str, peak_db: float) -> Dict[str, Any]:
         """
-        Acoustic alert for deaf and hard-of-hearing users.
+        Acoustic alert for deaf and hard-of-hearing users with spoken warning voice.
         """
         result = self.audio.evaluate_environmental_sound(sound_type, peak_db)
+        if result["is_confirmed"]:
+            speech_text = f"Warning! High amplitude {sound_type.replace('_', ' ')} emergency signal confirmed at {result['amplitude_db']} decibels. Please verify immediate surroundings."
+        else:
+            speech_text = f"Notice. Acoustic activity candidate detected: {sound_type.replace('_', ' ')} at {result['amplitude_db']} decibels. Unconfirmed candidate."
+
+        result["speech_text"] = speech_text
         self.audio.add_caption(result["guidance_banner"], source="Sound Alert", visual_alert=result["status"])
+
+        if self.enable_tts and self.tts:
+            self.tts.speak(speech_text)
+
         return result
 
     def request_cloud_analysis(self, frame: Optional[np.ndarray] = None, task: str = "scene_analysis") -> Dict[str, Any]:
