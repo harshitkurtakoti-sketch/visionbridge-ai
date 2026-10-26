@@ -15,6 +15,7 @@ from .ocr import OCREngine
 from .text_to_speech import TextToSpeechManager
 from .speech_to_text import AudioAccessibilityManager, CommandIntent
 from .aws_service import AWSAccessibilityService, PrivacyConsentError
+from .sign_language import SignLanguageTranslator
 
 
 class VisionBridgeAssistant:
@@ -40,6 +41,7 @@ class VisionBridgeAssistant:
         self.tts = TextToSpeechManager(rate=speech_rate) if enable_tts else None
         self.audio = AudioAccessibilityManager()
         self.aws = AWSAccessibilityService()
+        self.sign_translator = SignLanguageTranslator()
 
         self.enable_tts = enable_tts
         self.user_cloud_consent = False
@@ -140,6 +142,32 @@ class VisionBridgeAssistant:
             "engine": ocr_res["engine"],
         }
 
+    def translate_sign_language(self, frame: Optional[np.ndarray] = None, hint: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Translate American Sign Language (ASL) and hand gestures for deaf communication.
+        Provides both visual captions and vocalized speech for hearing companions.
+        """
+        if frame is None:
+            frame = self.get_current_frame()
+            if frame is None:
+                err_msg = "Camera is not active. Please start camera first for sign language recognition."
+                self.audio.add_caption(err_msg, source="System")
+                return {"error": err_msg}
+
+        res = self.sign_translator.translate_frame(frame, synthetic_hint=hint)
+        spoken_script = res["spoken_translation"]
+
+        self.audio.add_caption(
+            f"{res['icon']} Sign: {res['meaning']} - Saying: \"{res['accumulated_sentence']}\"",
+            source="Deaf Assist (Sign Language)",
+        )
+
+        if self.enable_tts and self.tts:
+            self.tts.speak(spoken_script)
+
+        res["speech_text"] = spoken_script
+        return res
+
     def process_command(self, command_text: str) -> Dict[str, Any]:
         """
         Process user request (spoken or typed).
@@ -154,6 +182,8 @@ class VisionBridgeAssistant:
             return self.read_text()
         elif intent == CommandIntent.DETECT_OBJECTS:
             return self.describe_surroundings()
+        elif intent == CommandIntent.TRANSLATE_SIGN_LANGUAGE:
+            return self.translate_sign_language()
         elif intent == CommandIntent.START_CAMERA:
             self.start_camera()
             msg = "Visual sensor array online and streaming, sir."

@@ -634,6 +634,9 @@ def render_jarvis_audio_bridge(
                 <button class="command-chip" onclick="dispatchVoiceCommand('Jarvis, read this text.')">
                     📖 "Read Text"
                 </button>
+                <button class="command-chip" style="border-color: #00e676; color: #bbf7d0;" onclick="dispatchVoiceCommand('Jarvis, translate sign language.')">
+                    🤟 "Sign Language"
+                </button>
                 <button class="command-chip hazard" onclick="dispatchVoiceCommand('Jarvis, warn me of hazards.')">
                     ⚠️ "Hazard Check"
                 </button>

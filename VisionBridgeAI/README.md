@@ -22,14 +22,27 @@
    - Explicit uncertainty signaling when confident identification is not possible.
    - Clear navigation safety disclaimers (does not claim safe obstacle avoidance).
 
-2. **Acoustic Assistance (Deaf & Hard-of-Hearing Users):**
+2. **Acoustic & Deaf Assistance (Deaf, Hard-of-Hearing & Non-Verbal Users):**
+   - **Real-Time Sign Language Translation**: Translates American Sign Language (ASL) and hand gestures (Hello, Thank you, Help, Peace, Yes, Good) into live text captions and **vocalized speech output** for hearing companions.
    - High-contrast, large-format live captions conforming to WCAG 2.2 AAA.
    - Environmental sound event detection strictly differentiating between **Confirmed Events** ($\ge 75\text{ dB}$) and **Unconfirmed Sound Candidates** ($< 75\text{ dB}$).
-   - Full text-based conversational interaction with the assistant.
+   - In-browser microphone voice commands and Web Audio emergency sirens.
 
 3. **Opt-In AWS Cloud Component:**
    - Serverless AWS Lambda on **AWS Graviton (ARM64)** architecture using the **Cloud Optimized OpenCV Library (COOL)**.
    - Strict local-first privacy gate: cloud processing is blocked unless explicit user consent is provided.
+
+---
+
+## 💻 System Prerequisites (Requirements to Run)
+
+| Requirement | Details |
+| :--- | :--- |
+| **Python** | Python 3.10, 3.11, 3.12, or 3.13 |
+| **OS** | Windows 10/11 (64-bit), Ubuntu 20.04+, or macOS 12.0+ |
+| **Hardware** | Camera (integrated or USB webcam), Microphone, Speakers / Audio Output |
+| **Browser** | Chrome, Edge, Firefox, or Brave (supporting Web Speech & Web Audio APIs) |
+| **OCR (Optional)** | Tesseract OCR (`winget install UB-Mannheim.TesseractOCR` on Windows, `apt-get install tesseract-ocr` on Linux) |
 
 ---
 
@@ -38,45 +51,21 @@
 ```text
 VisionBridgeAI/
 ├── notebooks/                         # 7 reproducible Jupyter Notebooks
-│   ├── 01_environment_dataset.ipynb
-│   ├── 02_image_video_processing.ipynb
-│   ├── 03_object_detection.ipynb
-│   ├── 04_ocr.ipynb
-│   ├── 05_speech_accessibility.ipynb
-│   ├── 06_evaluation.ipynb
-│   └── 07_integration_demo.ipynb
 ├── src/                               # Core Python Modules
 │   ├── __init__.py
+│   ├── assistant.py                   # Central Jarvis orchestrator
+│   ├── sign_language.py               # ASL Sign Language recognition & translation
 │   ├── camera.py                      # Resilient frame capture & synthetic fallback
 │   ├── vision.py                      # OpenCV 5 pipeline & spatial mapping
 │   ├── object_detection.py            # Object detection, scene describer & uncertainty
 │   ├── ocr.py                         # OpenCV 5 OCR preprocessor, CER & WER
 │   ├── speech_to_text.py              # Command parser & acoustic event detection
 │   ├── text_to_speech.py              # Local pyttsx3 speech synthesis
-│   ├── assistant.py                   # Central Jarvis orchestrator
 │   └── aws_service.py                 # AWS Lambda & S3 client with privacy gate
 ├── app/                               # User Interface
-│   ├── main.py                        # Streamlit accessible application
-│   └── ui.py                          # WCAG AAA styles & accessible components
-├── deploy/                            # AWS CloudFormation / SAM deployment
-│   ├── lambda_function.py             # OpenCV 5 COOL handler on Graviton
-│   └── aws_template.yaml              # Least-privilege IAM, S3 & Lambda template
-├── tests/                             # Test Suite
-│   ├── test_camera.py
-│   ├── test_vision.py
-│   ├── test_ocr.py
-│   └── test_assistant.py
-├── models/
-│   └── README.md                      # Model documentation & weights handling
-├── data/
-│   └── README.md                      # Data guidelines & privacy policy
-├── reports/
-│   ├── architecture.md                # System architecture document
-│   └── evaluation_report.md           # Benchmark and evaluation results
-├── requirements.txt                   # Pinned project dependencies
-├── .env.example                       # Environment configuration template
-├── .gitignore                         # Excludes models, weights, keys & cache
-├── LICENSE                            # Apache 2.0 License
+│   ├── main.py                        # Streamlit accessible application & real-time loop
+│   └── ui.py                          # Jarvis HUD styles, audio bridge, and reticle
+├── tests/                             # 19 Automated Tests
 └── README.md                          # Main project guide
 ```
 
@@ -84,14 +73,13 @@ VisionBridgeAI/
 
 ## 🚀 Quick Start & Installation
 
-### 1. Clone & Set Up Virtual Environment
+### 1. Set Up Virtual Environment
 
 ```bash
-cd VisionBridgeAI
 python -m venv .venv
 
-# On Windows:
-.venv\Scripts\activate
+# On Windows (PowerShell):
+.venv\Scripts\Activate.ps1
 
 # On Linux/macOS:
 source .venv/bin/activate
@@ -104,10 +92,9 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Verify OpenCV 5 is active:
+Verify OpenCV:
 ```bash
 python -c "import cv2; print('OpenCV Version:', cv2.__version__)"
-# Output: OpenCV Version: 5.0.0.93
 ```
 
 ---
@@ -117,32 +104,31 @@ python -c "import cv2; print('OpenCV Version:', cv2.__version__)"
 Run unit and integration tests across all modules:
 
 ```bash
-# Set PYTHONPATH to project root:
-# On Windows (PowerShell):
-$env:PYTHONPATH="." ; pytest -p no:cacheprovider -v
-
-# On Linux / macOS:
-PYTHONPATH=. pytest -v
+python -m pytest -v
 ```
 
-**Results:** 14/14 tests passing (`tests/test_camera.py`, `tests/test_vision.py`, `tests/test_ocr.py`, `tests/test_assistant.py`).
+**Results:** **19/19 tests passing** across camera, vision, OCR, assistant, AWS, and sign language translation.
 
 ---
 
 ## 💻 Running the Application
 
-Launch the interactive accessibility application:
+Launch the interactive Jarvis accessibility application:
 
 ```bash
 streamlit run app/main.py
 ```
+*(or from project root: `streamlit run streamlit_app.py`)*
 
 ### Key Controls & Shortcuts:
+- **`[V]`**: Push-to-Talk Voice Command Activation.
 - **`[C]`**: Toggle live camera stream (or synthetic assistive test feed).
 - **`[D]`**: Describe surroundings with spatial direction and proximity.
 - **`[R]`**: Read text and signage using OpenCV 5 OCR binarization.
+- **`[T]`**: Translate Sign Language hand gestures (Deaf assist).
 - **`[S]`**: Query system status and camera lighting/blur quality.
-- **Sound Event Simulator**: Trigger simulated environmental sounds to test deaf visual alerts.
+- **`🔄 Real-Time Live Tracking`**: Continuous 15-30 FPS object detection & sign translation.
+- **Sound Event Simulator**: Trigger simulated environmental sounds to test deaf visual alerts and sirens.
 - **AWS Cloud Toggle**: Opt-in toggle to test AWS Graviton serverless inference.
 
 ---

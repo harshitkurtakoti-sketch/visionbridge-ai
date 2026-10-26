@@ -22,6 +22,7 @@ class CommandIntent(str, Enum):
     HAZARD_WARNING = "hazard_warning"
     FIRE_ALARM = "fire_alarm"
     DOOR_KNOCK = "door_knock"
+    TRANSLATE_SIGN_LANGUAGE = "translate_sign"
     HELP = "help"
     UNKNOWN = "unknown"
 
@@ -42,6 +43,7 @@ class AudioAccessibilityManager:
         Matches commands such as:
         - "Jarvis, describe my surroundings."
         - "Read this text."
+        - "Translate sign language."
         - "What objects can you see?"
         - "Warn me of hazards."
         - "Check emergency alarms."
@@ -54,7 +56,10 @@ class AudioAccessibilityManager:
         intent = CommandIntent.UNKNOWN
         confidence = 0.5
 
-        if any(phrase in text_clean for phrase in ["fire alarm", "fire", "smoke detector"]):
+        if any(phrase in text_clean for phrase in ["sign language", "sign", "gesture", "deaf sign", "translate sign"]):
+            intent = CommandIntent.TRANSLATE_SIGN_LANGUAGE
+            confidence = 0.95
+        elif any(phrase in text_clean for phrase in ["fire alarm", "fire", "smoke detector"]):
             intent = CommandIntent.FIRE_ALARM
             confidence = 0.95
         elif any(phrase in text_clean for phrase in ["door knock", "knock", "doorbell", "visitor"]):

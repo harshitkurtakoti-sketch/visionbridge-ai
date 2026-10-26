@@ -46,6 +46,21 @@ def test_assistant_command_routing(assistant):
     res_status = assistant.process_command("status")
     assert "status_message" in res_status
 
+    res_sign = assistant.process_command("Jarvis, translate sign language.")
+    assert "sign" in res_sign
+    assert "speech_text" in res_sign
+
+
+def test_assistant_sign_language_translation(assistant):
+    """Verify sign language gesture translation for deaf users."""
+    result = assistant.translate_sign_language(hint="HELLO")
+    assert "error" not in result
+    assert result["sign"] == "HELLO"
+    assert "meaning" in result
+    assert "spoken_translation" in result
+    assert "speech_text" in result
+    assert "Deaf user signed" in result["speech_text"]
+
 
 def test_acoustic_alert_differentiation(assistant):
     """Verify clear distinction between sound candidates and confirmed events."""
